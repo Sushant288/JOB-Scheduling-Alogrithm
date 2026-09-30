@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cloud Computing Job Scheduler - Greedy Multi-Processor Job Sequencing with Deadlines using Disjoint Set Union (DSU) O(n log n).">
+  <title>Cloud Computing Job Scheduler | Greedy DSU O(n log n)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-surface: #121826;
+      --bg-card: rgba(22, 30, 49, 0.75);
+      --bg-card-hover: rgba(30, 41, 67, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.5);
+      --primary: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+      --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.25);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(217, 70, 239, 0.1) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 2rem;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--primary-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .logo-badge svg {
+      width: 24px;
+      height: 24px;
+      fill: #ffffff;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(180deg, #ffffff 30%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: var(--radius-full);
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    /* Tabs Navigation */
+    .nav-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      gap: 4px;
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab-btn.active {
+      color: #ffffff;
+      background: var(--primary);
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 1.5rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Glass Cards */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-subtle);
+      margin-bottom: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Controls Grid */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    select, input, button {
+      font-family: inherit;
+    }
+
+    .input-control {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 0.9rem;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .input-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fb7185;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.25);
+    }
+
+    /* Metric Stat Cards */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-color, var(--primary));
+    }
+
+    .stat-title {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 0.25rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+    }
+
+    .stat-delta {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-emerald);
+    }
+
+    /* Job Chips & Editor */
+    .jobs-table-container {
+      max-height: 260px;
+      overflow-y: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: rgba(11, 15, 25, 0.5);
+    }
+
+    .jobs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+
+    .jobs-table th {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.65rem 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .jobs-table td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .jobs-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .job-pill {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    /* Interactive Timeline / Gantt */
+    .timeline-wrapper {
+      overflow-x: auto;
+      padding: 1.5rem 0.5rem;
+      background: rgba(8, 12, 20, 0.6);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .gantt-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-width: 600px;
+    }
+
+    .gantt-header-row {
+      display: flex;
+      align-items: center;
+      margin-left: 120px;
+      gap: 8px;
+    }
+
+    .time-slot-header {
+      flex: 1;
+      min-width: 75px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .processor-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .processor-label {
+      width: 112px;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .slots-track {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+    }
+
+    .gantt-slot {
+      flex: 1;
+      min-width: 75px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px dashed rgba(255, 255, 255, 0.09);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .gantt-slot.occupied {
+      border-style: solid;
+      border-color: rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .gantt-slot.occupied:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .slot-job-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 2px;
+    }
+
+    .job-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #ffffff;
+    }
+
+    .job-sub {
+      font-size: 0.72rem;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    /* Rejected Drawer */
+    .rejected-section {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      background: rgba(244, 63, 94, 0.06);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      border-radius: var(--radius-md);
+    }
+
+    .rejected-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.7rem;
+    }
+
+    .rejected-chip {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #fca5a5;
+    }
+
+    /* Step-by-Step Stepper */
+    .stepper-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .step-log-box {
+      background: rgba(11, 15, 25, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .log-line {
+      margin-bottom: 0.4rem;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .log-line.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-left: 3px solid var(--primary);
+    }
+
+    /* Comparison Charts */
+    .algo-compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .algo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      position: relative;
+    }
+
+    .algo-card.recommended {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .algo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .algo-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .algo-profit {
+      font-size: 1.8rem;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      margin: 0.5rem 0;
+    }
+
+    /* Benchmarks Gallery */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .chart-container {
+      background: rgba(11, 15, 25, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .chart-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    /* Theory tab */
+    .theory-content {
+      line-height: 1.8;
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+
+    .theory-content h3 {
+      font-family: 'Outfit', sans-serif;
+      color: #ffffff;
+      margin: 1.5rem 0 0.5rem 0;
+      font-size: 1.25rem;
+    }
+
+    .theory-content p {
+      margin-bottom: 1rem;
+    }
+
+    .code-block {
+      background: rgba(11, 15, 25, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-top: auto;
+    }
+
+    /* Colors for jobs */
+    .color-0 { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .color-1 { background: linear-gradient(135deg, #10b981, #047857); }
+    .color-2 { background: linear-gradient(135deg, #f59e0b, #b45309); }
+    .color-3 { background: linear-gradient(135deg, #ec4899, #be185d); }
+    .color-4 { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .color-5 { background: linear-gradient(135deg, #06b6d4, #0e7490); }
+    .color-6 { background: linear-gradient(135deg, #f97316, #c2410c); }
+    .color-7 { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-content">
+      <div class="logo-group">
+        <div class="logo-badge" id="app-logo">
+          <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
+        </div>
+        <div>
+          <h1 id="main-title">Cloud Computing Job Scheduler</h1>
+          <div class="subtitle">
+            <span>Greedy Job Sequencing with Deadlines on $m$ Processors</span>
+            <span class="badge-pill">DSU $O(n \log n)$</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" aria-label="Main Navigation">
+        <button class="nav-tab-btn active" id="tab-btn-schedule" onclick="switchTab('schedule')">
+          <span>Timeline & Schedule</span>
+        </button>
+        <button class="nav-tab-btn" id="tab-btn-trace" onclick="switchTab('trace')">
+          <span>Step-by-Step DSU</span>
+        </button>
+        <button class="nav-tab-btn" id="tab-btn-compare" onclick="switchTab('compare')">
+          <span>Algorithm Comparison</span>
+        </button>
+        <button class="nav-tab-btn" id="tab-btn-benchmarks" onclick="switchTab('benchmarks')">
+          <span>Benchmarks & Scaling</span>
+        </button>
+        <button class="nav-tab-btn" id="tab-btn-theory" onclick="switchTab('theory')">
+          <span>Theory & Analysis</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- TAB 1: SCHEDULE & TIMELINE -->
+    <div id="tab-schedule" class="tab-pane active">
+      <!-- Config Control Bar -->
+      <section class="glass-card" aria-label="Scheduler Controls">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            System Parameters & Presets
+          </span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary" id="btn-load-preset" onclick="loadSelectedPreset()">Apply Preset</button>
+            <button class="btn btn-primary" id="btn-run-schedule" onclick="runGreedyScheduler()">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              Schedule Jobs
+            </button>
+          </div>
+        </div>
+
+        <div class="controls-grid">
+          <div class="form-group">
+            <label for="num-processors">Processors (m identical VMs): <span id="lbl-proc-count" style="color:#818cf8; font-weight:700;">2</span></label>
+            <input type="range" class="input-control" id="num-processors" min="1" max="8" value="2" oninput="updateProcCount(this.value)">
+          </div>
+
+          <div class="form-group">
+            <label for="preset-select">Preset Workload</label>
+            <select class="input-control" id="preset-select">
+              <option value="textbook">Standard Demo (8 Jobs - Textbook Instance)</option>
+              <option value="contention">High Deadline Contention (12 Jobs)</option>
+              <option value="cloud_cluster">Cloud Burst Cluster (20 Jobs, 4 VMs)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Quick Generation</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" id="btn-random-workload" style="flex:1;" onclick="generateRandomWorkload()">Random Workload</button>
+              <button class="btn btn-secondary" id="btn-reset-jobs" onclick="resetToDefault()">Reset</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stat Metrics Row -->
+      <section class="metrics-row" aria-label="Key Performance Indicators">
+        <div class="stat-card" style="--accent-color: var(--accent-emerald);">
+          <div class="stat-title">Total Profit Earned</div>
+          <div class="stat-value" id="stat-total-profit">$0</div>
+        </div>
+        <div class="stat-card" style="--accent-color: var(--primary);">
+          <div class="stat-title">Jobs Scheduled / Total</div>
+          <div class="stat-value" id="stat-scheduled-ratio">0 / 0</div>
+        </div>
+        <div class="stat-card" style="--accent-color: var(--accent-cyan);">
+          <div class="stat-title">VM Core Utilization</div>
+          <div class="stat-value" id="stat-utilization">0%</div>
+        </div>
+        <div class="stat-card" style="--accent-color: var(--accent-amber);">
+          <div class="stat-title">Greedy Advantage vs EDF</div>
+          <div class="stat-value" id="stat-edf-advantage">+0%</div>
+        </div>
+      </section>
+
+      <!-- Visual Gantt Timeline -->
+      <section class="glass-card" aria-label="Interactive Gantt Timeline">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+            Multi-Processor Timeline (Gantt Chart)
+          </span>
+          <div id="timeline-legend" style="display:flex; align-items:center; gap:1rem; font-size:0.8rem; color:var(--text-muted);">
+            <span style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="width:12px; height:12px; border-radius:3px; background:var(--primary);"></span> Scheduled Job
+            </span>
+            <span style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="width:12px; height:12px; border-radius:3px; background:rgba(255,255,255,0.06); border:1px dashed rgba(255,255,255,0.2);"></span> Idle Slot
+            </span>
+          </div>
+        </div>
+
+        <div class="timeline-wrapper" id="timeline-container">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="rejected-section" id="rejected-container" style="display: none;">
+          <strong style="color: #fb7185; font-size: 0.88rem;">Rejected Jobs (Cannot fit before deadlines):</strong>
+          <div class="rejected-chips" id="rejected-chips-list"></div>
+        </div>
+      </section>
+
+      <!-- Jobs Editor Card -->
+      <section class="glass-card" aria-label="Job Queue Management">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+            Job Queue Editor
+          </span>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="text" id="add-job-id" class="input-control" placeholder="ID (e.g. J9)" style="width:110px;">
+            <input type="number" id="add-job-deadline" class="input-control" placeholder="Deadline" min="1" max="30" style="width:110px;">
+            <input type="number" id="add-job-profit" class="input-control" placeholder="Profit ($)" min="1" style="width:110px;">
+            <button class="btn btn-secondary" id="btn-add-job" onclick="addNewJob()">+ Add Job</button>
+            <button class="btn btn-danger" id="btn-clear-all" onclick="clearAllJobs()">Clear</button>
+          </div>
+        </div>
+
+        <div class="jobs-table-container">
+          <table class="jobs-table" id="jobs-table">
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>Deadline ($d_i$)</th>
+                <th>Profit ($p_i$)</th>
+                <th>Profit / Deadline Ratio</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 2: STEP-BY-STEP DSU TRACER -->
+    <div id="tab-trace" class="tab-pane">
+      <section class="glass-card" aria-label="Step-by-step Trace Visualizer">
+        <div class="card-header">
+          <span class="card-title">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+            Step-by-Step Disjoint Set Union (DSU) Trace
+          </span>
+          <span class="badge-pill" id="trace-step-counter">Step 0 / 0</span>
+        </div>
+
+        <div class="stepper-controls">
+          <button class="btn btn-secondary" id="btn-step-prev" onclick="stepTrace(-1)">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            Previous
+          </button>
+          <button class="btn btn-primary" id="btn-step-play" onclick="togglePlayTrace()">
+            <svg id="play-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span id="play-btn-text">Play Autostep</span>
+          </button>
+          <button class="btn btn-secondary" id="btn-step-next" onclick="stepTrace(1)">
+            Next
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+          </button>
+          <button class="btn btn-secondary" id="btn-step-reset" onclick="resetTrace()">Reset</button>
+        </div>
+
+        <div class="timeline-wrapper" id="trace-timeline-container" style="margin-bottom: 1.5rem;">
+          <!-- Live partial timeline -->
+        </div>
+
+        <div class="step-log-box" id="step-log-box">
+          <div class="log-line" style="color:var(--text-muted);">Click "Next" or "Play" to step through how the DSU probes available slots for sorted jobs...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 3: ALGORITHM COMPARISON -->
+    <div id="tab-compare" class="tab-pane">
+      <section class="glass-card" aria-label="Algorithm Baselines Comparison">
+        <div class="card-header">
+          <span class="card-title">Greedy DSU vs Naive Baselines</span>
+          <span style="font-size:0.85rem; color:var(--text-muted);">Evaluated on Current Job Queue</span>
+        </div>
+
+        <div class="algo-compare-grid" id="compare-cards-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <div style="background: rgba(11, 15, 25, 0.6); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <h4 style="font-family:'Outfit', sans-serif; margin-bottom: 0.75rem;">Why Greedy + DSU Outperforms Baselines:</h4>
+          <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.8;">
+            <li><strong style="color: #818cf8;">Greedy (by Profit):</strong> Treats the system as an independent system / matroid. By greedily prioritizing highest-paying jobs and placing them as late as possible ($\le$ deadline), it frees up early slots for other jobs, guaranteeing the mathematically optimal total profit.</li>
+            <li><strong style="color: var(--accent-amber);">Earliest Deadline First (EDF):</strong> Prioritizes jobs purely based on deadline urgency regardless of profit, frequently filling slots with low-value jobs and blocking high-value jobs.</li>
+            <li><strong style="color: var(--text-dim);">First-Come First-Served (FCFS):</strong> Disregards both deadlines and profit, leading to severe profit loss and high rejection rates under heavy loads.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 4: BENCHMARKS & SCALING -->
+    <div id="tab-benchmarks" class="tab-pane">
+      <section class="glass-card" aria-label="Experimental Benchmarks">
+        <div class="card-header">
+          <span class="card-title">Empirical Performance & Runtime Scaling</span>
+          <button class="btn btn-primary" id="btn-rerun-experiments" onclick="rerunExperiments()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Re-run Experiments
+          </button>
+        </div>
+
+        <div class="gallery-grid">
+          <div class="chart-container">
+            <h4 style="margin-bottom:0.75rem; font-family:'Outfit',sans-serif;">Average Profit Across 40 Workloads</h4>
+            <img src="/api/images/profit.png" alt="Average Profit Comparison" class="chart-img" id="img-profit" onerror="this.src=''; this.alt='Running experiments to generate plot...'">
+          </div>
+          <div class="chart-container">
+            <h4 style="margin-bottom:0.75rem; font-family:'Outfit',sans-serif;">Multi-Processor Gantt Chart Output</h4>
+            <img src="/api/images/gantt.png" alt="Multi-processor Gantt chart" class="chart-img" id="img-gantt" onerror="this.src=''; this.alt='Running experiments to generate plot...'">
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem;" id="runtime-scaling-table-container">
+          <!-- Runtime table -->
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 5: THEORY & ANALYSIS -->
+    <div id="tab-theory" class="tab-pane">
+      <section class="glass-card theory-content" aria-label="Theoretical Analysis">
+        <h2 style="font-family:'Outfit', sans-serif; font-size:1.6rem; color:#fff; margin-bottom: 0.5rem;">Theoretical Formulation & Algorithm Design</h2>
+        
+        <h3>1. Problem Formulation</h3>
+        <p>We are given $n$ unit-time jobs $J = \{j_1, j_2, \dots, j_n\}$ and $m$ identical processors (Cloud Virtual Machines). Each job $j_i$ has a deadline $d_i \in \mathbb{Z}^+$ and an earned profit $p_i \ge 0$. A job yields profit $p_i$ if and only if it completes execution on some processor at or before time slot $d_i$. At most one job can run on processor $p$ during any unit time interval $[t-1, t]$. Our objective is to schedule a feasible subset of jobs that maximizes total profit:</p>
+        <div class="code-block">Maximize: &sum;_{j \in S} p_j   subject to S being feasible on m processors.</div>
+
+        <h3>2. Disjoint Set Union (DSU) Unrolling Trick</h3>
+        <p>In classical single-processor job scheduling, time slots $1 \dots D$ are indexed directly. For $m$ identical processors, we "unroll" the 2D grid into a 1D timeline of $m \times D$ discrete slots:</p>
+        <div class="code-block">Flattened Slot Index i &rarr; Time Slot: t = (i // m) + 1,  Processor: p = i % m</div>
+        <p>For a job with deadline $d$, the latest possible slot index is $(d \times m - 1)$. A Disjoint Set Union structure maintains pointers where <code>parent[i]</code> indicates the latest free slot $\le i$. With near-constant amortized time per operation $\alpha(mD)$, finding and assigning the latest valid slot executes in $O(1)$ time.</p>
+
+        <h3>3. Complexity Analysis</h3>
+        <table class="jobs-table" style="margin: 1rem 0;">
+          <thead>
+            <tr>
+              <th>Approach</th>
+              <th>Time Complexity</th>
+              <th>Space Complexity</th>
+              <th>Optimality Guarantee</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Greedy + DSU (This Project)</strong></td>
+              <td><span style="color:var(--accent-emerald); font-weight:600;">O(n log n + m&middot;D)</span></td>
+              <td>O(m&middot;D)</td>
+              <td><strong>Guaranteed Optimal</strong> (Matroid)</td>
+            </tr>
+            <tr>
+              <td>Naive Greedy (Linear Slot Search)</td>
+              <td>O(n log n + n&middot;D)</td>
+              <td>O(m&middot;D)</td>
+              <td>Guaranteed Optimal</td>
+            </tr>
+            <tr>
+              <td>Earliest Deadline First (EDF)</td>
+              <td>O(n log n)</td>
+              <td>O(m&middot;D)</td>
+              <td>Suboptimal (ignores profits)</td>
+            </tr>
+            <tr>
+              <td>Brute-Force Search</td>
+              <td>O(2^n &middot; n log n)</td>
+              <td>O(n)</td>
+              <td>Optimal (Intractable for n &gt; 20)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Analysis and Design of Algorithms (ADA) Project &bull; Cloud Computing Job Scheduler with DSU &bull; Python & FastAPI
+  </footer>
+
+  <script>
+    let currentJobs = [
+      { job_id: "J1", deadline: 2, profit: 100 },
+      { job_id: "J2", deadline: 1, profit: 19 },
+      { job_id: "J3", deadline: 2, profit: 27 },
+      { job_id: "J4", deadline: 1, profit: 25 },
+      { job_id: "J5", deadline: 3, profit: 15 },
+      { job_id: "J6", deadline: 3, profit: 60 },
+      { job_id: "J7", deadline: 2, profit: 40 },
+      { job_id: "J8", deadline: 4, profit: 35 }
+    ];
+
+    let presetsData = {};
+    let traceData = null;
+    let traceIndex = 0;
+    let traceTimer = null;
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+
+      if (tabId === 'trace') {
+        loadTrace();
+      } else if (tabId === 'benchmarks') {
+        loadExperimentData();
+      }
+    }
+
+    function updateProcCount(val) {
+      document.getElementById('lbl-proc-count').innerText = val;
+      runGreedyScheduler();
+    }
+
+    function renderJobsTable() {
+      const tbody = document.getElementById('jobs-table-body');
+      tbody.innerHTML = '';
+      currentJobs.forEach((job, idx) => {
+        const ratio = (job.profit / job.deadline).toFixed(1);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="job-pill">${job.job_id}</span></td>
+          <td>${job.deadline}</td>
+          <td><strong style="color:var(--accent-emerald);">$${job.profit}</strong></td>
+          <td>${ratio}</td>
+          <td>
+            <button class="btn btn-danger" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="removeJob(${idx})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addNewJob() {
+      const idInput = document.getElementById('add-job-id');
+      const dInput = document.getElementById('add-job-deadline');
+      const pInput = document.getElementById('add-job-profit');
+
+      const id = idInput.value.trim() || `J${currentJobs.length + 1}`;
+      const d = parseInt(dInput.value);
+      const p = parseInt(pInput.value);
+
+      if (isNaN(d) || d < 1 || isNaN(p) || p < 0) {
+        alert("Please enter a valid positive deadline and profit.");
+        return;
+      }
+
+      currentJobs.push({ job_id: id, deadline: d, profit: p });
+      idInput.value = '';
+      dInput.value = '';
+      pInput.value = '';
+      renderJobsTable();
+      runGreedyScheduler();
+    }
+
+    function removeJob(idx) {
+      currentJobs.splice(idx, 1);
+      renderJobsTable();
+      runGreedyScheduler();
+    }
+
+    function clearAllJobs() {
+      currentJobs = [];
+      renderJobsTable();
+      runGreedyScheduler();
+    }
+
+    function resetToDefault() {
+      currentJobs = [
+        { job_id: "J1", deadline: 2, profit: 100 },
+        { job_id: "J2", deadline: 1, profit: 19 },
+        { job_id: "J3", deadline: 2, profit: 27 },
+        { job_id: "J4", deadline: 1, profit: 25 },
+        { job_id: "J5", deadline: 3, profit: 15 },
+        { job_id: "J6", deadline: 3, profit: 60 },
+        { job_id: "J7", deadline: 2, profit: 40 },
+        { job_id: "J8", deadline: 4, profit: 35 }
+      ];
+      document.getElementById('num-processors').value = 2;
+      updateProcCount(2);
+      renderJobsTable();
+      runGreedyScheduler();
+    }
+
+    async function loadPresets() {
+      try {
+        const res = await fetch('/api/presets');
+        presetsData = await res.json();
+      } catch (e) {
+        console.error("Failed to load presets", e);
+      }
+    }
+
+    function loadSelectedPreset() {
+      const selected = document.getElementById('preset-select').value;
+      if (presetsData[selected]) {
+        currentJobs = JSON.parse(JSON.stringify(presetsData[selected].jobs));
+        document.getElementById('num-processors').value = presetsData[selected].m;
+        updateProcCount(presetsData[selected].m);
+        renderJobsTable();
+        runGreedyScheduler();
+      }
+    }
+
+    async function generateRandomWorkload() {
+      try {
+        const res = await fetch('/api/random-jobs', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ num_jobs: 14, max_deadline: 6, max_profit: 200 })
+        });
+        const data = await res.json();
+        currentJobs = data.jobs;
+        renderJobsTable();
+        runGreedyScheduler();
+      } catch (e) {
+        alert("Failed to generate workload");
+      }
+    }
+
+    async function runGreedyScheduler() {
+      const m = parseInt(document.getElementById('num-processors').value);
+      try {
+        const res = await fetch('/api/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ m: m, jobs: currentJobs })
+        });
+        const data = await res.json();
+        updateUI(data);
+      } catch (e) {
+        console.error("Scheduling error", e);
+      }
+    }
+
+    function updateUI(data) {
+      const greedy = data.greedy;
+      document.getElementById('stat-total-profit').innerText = `$${greedy.total_profit.toLocaleString()}`;
+      document.getElementById('stat-scheduled-ratio').innerText = `${greedy.scheduled_count} / ${currentJobs.length}`;
+      document.getElementById('stat-utilization').innerText = `${greedy.utilization_pct}%`;
+      document.getElementById('stat-edf-advantage').innerText = `+${data.edf.greedy_advantage_pct}%`;
+
+      renderGantt(data.m, data.max_time, greedy.schedule);
+
+      // Rejected jobs
+      const rejCont = document.getElementById('rejected-container');
+      const rejList = document.getElementById('rejected-chips-list');
+      if (greedy.rejected && greedy.rejected.length > 0) {
+        rejCont.style.display = 'block';
+        rejList.innerHTML = greedy.rejected.map(j => `
+          <div class="rejected-chip" title="Deadline was ${j.deadline}, profit was $${j.profit}">
+            ${j.job_id} (d: ${j.deadline}, $${j.profit})
+          </div>
+        `).join('');
+      } else {
+        rejCont.style.display = 'none';
+        rejList.innerHTML = '';
+      }
+
+      // Comparison cards
+      renderComparison(data);
+    }
+
+    function renderGantt(m, maxTime, scheduleItems) {
+      const container = document.getElementById('timeline-container');
+      if (maxTime === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">No jobs scheduled</div>';
+        return;
+      }
+
+      // Build lookup (p, t) -> job
+      const map = {};
+      scheduleItems.forEach(item => {
+        map[`${item.processor},${item.time_slot}`] = item;
+      });
+
+      let html = '<div class="gantt-grid">';
+      
+      // Header row
+      html += '<div class="gantt-header-row">';
+      for (let t = 1; t <= maxTime; t++) {
+        html += `<div class="time-slot-header">Slot ${t}</div>`;
+      }
+      html += '</div>';
+
+      // Rows for each processor
+      for (let p = 1; p <= m; p++) {
+        html += `<div class="processor-row">`;
+        html += `<div class="processor-label">
+                   <span style="width:8px; height:8px; border-radius:50%; background:var(--accent-cyan);"></span>
+                   VM ${p}
+                 </div>`;
+        html += `<div class="slots-track">`;
+        for (let t = 1; t <= maxTime; t++) {
+          const key = `${p},${t}`;
+          if (map[key]) {
+            const job = map[key];
+            const colorIdx = (parseInt(job.job_id.replace(/\D/g, '')) || 1) % 8;
+            html += `
+              <div class="gantt-slot occupied color-${colorIdx}" title="Job: ${job.job_id}&#10;Slot: ${t}&#10;Deadline: ${job.deadline}&#10;Profit: $${job.profit}">
+                <div class="slot-job-badge">
+                  <span class="job-name">${job.job_id}</span>
+                  <span class="job-sub">$${job.profit} &bull; d${job.deadline}</span>
+                </div>
+              </div>
+            `;
+          } else {
+            html += `<div class="gantt-slot"><span style="color:var(--text-dim); font-size:0.75rem;">idle</span></div>`;
+          }
+        }
+        html += `</div></div>`;
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function renderComparison(data) {
+      const cont = document.getElementById('compare-cards-container');
+      cont.innerHTML = `
+        <div class="algo-card recommended">
+          <div class="algo-header">
+            <span class="algo-name" style="color:#818cf8;">Greedy (by Profit + DSU)</span>
+            <span class="badge-pill">Optimal</span>
+          </div>
+          <div class="algo-profit" style="color:#818cf8;">$${data.greedy.total_profit.toLocaleString()}</div>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+            Scheduled: <strong>${data.greedy.scheduled_count}</strong> jobs
+          </p>
+          <div style="font-size:0.78rem; color:var(--accent-emerald);">
+            &#10003; Guaranteed optimal total profit via Matroid Greedy
+          </div>
+        </div>
+
+        <div class="algo-card">
+          <div class="algo-header">
+            <span class="algo-name" style="color:var(--accent-amber);">Earliest Deadline First</span>
+            <span class="badge-pill" style="color:var(--accent-amber); border-color:var(--accent-amber);">Baseline</span>
+          </div>
+          <div class="algo-profit" style="color:var(--accent-amber);">$${data.edf.total_profit.toLocaleString()}</div>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+            Scheduled: <strong>${data.edf.scheduled_count}</strong> jobs
+          </p>
+          <div style="font-size:0.78rem; color:#fca5a5;">
+            Greedy earns <strong>+${data.edf.greedy_advantage_pct}%</strong> more profit
+          </div>
+        </div>
+
+        <div class="algo-card">
+          <div class="algo-header">
+            <span class="algo-name" style="color:var(--text-dim);">First-Come First-Served</span>
+            <span class="badge-pill" style="color:var(--text-dim); border-color:var(--text-dim);">Baseline</span>
+          </div>
+          <div class="algo-profit" style="color:var(--text-dim);">$${data.fcfs.total_profit.toLocaleString()}</div>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+            Scheduled: <strong>${data.fcfs.scheduled_count}</strong> jobs
+          </p>
+          <div style="font-size:0.78rem; color:#fca5a5;">
+            Greedy earns <strong>+${data.fcfs.greedy_advantage_pct}%</strong> more profit
+          </div>
+        </div>
+      `;
+    }
+
+    /* STEP-BY-STEP TRACE */
+    async function loadTrace() {
+      const m = parseInt(document.getElementById('num-processors').value);
+      const res = await fetch('/api/trace', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ m: m, jobs: currentJobs })
+      });
+      traceData = await res.json();
+      traceIndex = 0;
+      updateTraceView();
+    }
+
+    function updateTraceView() {
+      if (!traceData || !traceData.steps) return;
+      const totalSteps = traceData.steps.length;
+      document.getElementById('trace-step-counter').innerText = `Step ${traceIndex} / ${totalSteps}`;
+
+      const logBox = document.getElementById('step-log-box');
+      let logHtml = '';
+      
+      const currentSchedule = [];
+      for (let i = 0; i < traceIndex; i++) {
+        const step = traceData.steps[i];
+        const isCurrent = (i === traceIndex - 1);
+        if (step.status === 'scheduled') {
+          currentSchedule.push({
+            processor: step.processor,
+            time_slot: step.time_slot,
+            job_id: step.job.id,
+            profit: step.job.profit,
+            deadline: step.job.deadline
+          });
+          logHtml += `
+            <div class="log-line ${isCurrent ? 'active' : ''}">
+              <strong>Step ${step.step}:</strong> Picked <span class="job-pill">${step.job.id}</span> (Profit: $${step.job.profit}, Deadline: ${step.job.deadline}). Probed latest free slot &le; index ${step.target_max_slot} &rarr; Assigned to <strong>VM ${step.processor}, Time Slot ${step.time_slot}</strong>. Running Profit: $${step.current_total}.
+            </div>
+          `;
+        } else {
+          logHtml += `
+            <div class="log-line ${isCurrent ? 'active' : ''}" style="color:#fb7185;">
+              <strong>Step ${step.step}:</strong> Picked <span class="job-pill">${step.job.id}</span> (Profit: $${step.job.profit}, Deadline: ${step.job.deadline}). Rejected: ${step.reason}.
+            </div>
+          `;
+        }
+      }
+
+      if (traceIndex === 0) {
+        logHtml = '<div class="log-line" style="color:var(--text-muted);">Initial state: Jobs sorted by profit in descending order. Ready to execute DSU slot allocation. Click "Next" to begin.</div>';
+      }
+
+      logBox.innerHTML = logHtml;
+      logBox.scrollTop = logBox.scrollHeight;
+
+      renderTraceGantt(parseInt(document.getElementById('num-processors').value), traceData.max_time, currentSchedule);
+    }
+
+    function renderTraceGantt(m, maxTime, scheduleItems) {
+      const container = document.getElementById('trace-timeline-container');
+      const map = {};
+      scheduleItems.forEach(item => { map[`${item.processor},${item.time_slot}`] = item; });
+
+      let html = '<div class="gantt-grid">';
+      html += '<div class="gantt-header-row">';
+      for (let t = 1; t <= maxTime; t++) { html += `<div class="time-slot-header">Slot ${t}</div>`; }
+      html += '</div>';
+
+      for (let p = 1; p <= m; p++) {
+        html += `<div class="processor-row"><div class="processor-label">VM ${p}</div><div class="slots-track">`;
+        for (let t = 1; t <= maxTime; t++) {
+          const key = `${p},${t}`;
+          if (map[key]) {
+            const job = map[key];
+            const colorIdx = (parseInt(job.job_id.replace(/\D/g, '')) || 1) % 8;
+            html += `<div class="gantt-slot occupied color-${colorIdx}"><div class="slot-job-badge"><span class="job-name">${job.job_id}</span><span class="job-sub">$${job.profit}</span></div></div>`;
+          } else {
+            html += `<div class="gantt-slot"><span style="color:var(--text-dim); font-size:0.75rem;">free</span></div>`;
+          }
+        }
+        html += `</div></div>`;
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function stepTrace(delta) {
+      if (!traceData) return;
+      traceIndex = Math.max(0, Math.min(traceData.steps.length, traceIndex + delta));
+      updateTraceView();
+    }
+
+    function resetTrace() {
+      if (traceTimer) togglePlayTrace();
+      traceIndex = 0;
+      updateTraceView();
+    }
+
+    function togglePlayTrace() {
+      const btnText = document.getElementById('play-btn-text');
+      if (traceTimer) {
+        clearInterval(traceTimer);
+        traceTimer = null;
+        btnText.innerText = "Play Autostep";
+      } else {
+        if (!traceData || traceIndex >= traceData.steps.length) traceIndex = 0;
+        btnText.innerText = "Pause";
+        traceTimer = setInterval(() => {
+          if (traceIndex < traceData.steps.length) {
+            traceIndex++;
+            updateTraceView();
+          } else {
+            clearInterval(traceTimer);
+            traceTimer = null;
+            btnText.innerText = "Play Autostep";
+          }
+        }, 900);
+      }
+    }
+
+    /* BENCHMARKS & EXPERIMENTS */
+    async function loadExperimentData() {
+      try {
+        const res = await fetch('/api/experiments/results');
+        const data = await res.json();
+        if (data.runtime) {
+          renderRuntimeTable(data.runtime);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderRuntimeTable(runtime) {
+      const cont = document.getElementById('runtime-scaling-table-container');
+      let html = `
+        <h4 style="margin-bottom:0.75rem; font-family:'Outfit',sans-serif;">DSU Runtime Scaling Benchmark (4 Processors)</h4>
+        <table class="jobs-table">
+          <thead>
+            <tr>
+              <th>Job Count (n)</th>
+              <th>Execution Time (s)</th>
+              <th>Operations per Second</th>
+              <th>Theoretical Growth O(n log n)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      for (const [n, timeSec] of Object.entries(runtime)) {
+        const ops = (parseInt(n) / timeSec).toLocaleString(undefined, {maximumFractionDigits: 0});
+        html += `
+          <tr>
+            <td><strong>${parseInt(n).toLocaleString()}</strong> jobs</td>
+            <td><span style="font-family:'JetBrains Mono'; color:var(--accent-cyan);">${timeSec.toFixed(5)}s</span></td>
+            <td>${ops} ops/s</td>
+            <td><span class="badge-pill">Near-Linear</span></td>
+          </tr>
+        `;
+      }
+      html += '</tbody></table>';
+      cont.innerHTML = html;
+    }
+
+    async function rerunExperiments() {
+      const btn = document.getElementById('btn-rerun-experiments');
+      btn.disabled = true;
+      btn.innerText = "Running Experiments...";
+      try {
+        await fetch('/api/experiments/run', { method: 'POST' });
+        setTimeout(() => {
+          document.getElementById('img-profit').src = '/api/images/profit.png?t=' + Date.now();
+          document.getElementById('img-gantt').src = '/api/images/gantt.png?t=' + Date.now();
+          loadExperimentData();
+          btn.disabled = false;
+          btn.innerText = "Re-run Experiments";
+        }, 4000);
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerText = "Re-run Experiments";
+      }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPresets();
+      renderJobsTable();
+      runGreedyScheduler();
+    });
+  </script>
+</body>
+</html>

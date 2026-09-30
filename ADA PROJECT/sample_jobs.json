@@ -1,0 +1,10 @@
+[
+  {"job_id": "J1", "deadline": 2, "profit": 100},
+  {"job_id": "J2", "deadline": 1, "profit": 19},
+  {"job_id": "J3", "deadline": 2, "profit": 27},
+  {"job_id": "J4", "deadline": 1, "profit": 25},
+  {"job_id": "J5", "deadline": 3, "profit": 15},
+  {"job_id": "J6", "deadline": 3, "profit": 60},
+  {"job_id": "J7", "deadline": 2, "profit": 40},
+  {"job_id": "J8", "deadline": 4, "profit": 35}
+]
